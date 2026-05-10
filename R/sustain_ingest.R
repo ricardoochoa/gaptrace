@@ -28,7 +28,8 @@ sustain_ingest <- function(data, lang = "es") {
       owner = "responsable",
       reference = "referencia",
       units = "unidades",
-      tags = "etiquetas"
+      tags = "etiquetas",
+      priority = "prioridad"
     )
     
     es_to_en_valid <- es_to_en[es_to_en %in% names(df)]

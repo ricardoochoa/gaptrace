@@ -6,7 +6,7 @@
 #' @param interactive Logical. If `TRUE`, returns a `visNetwork` object. If `FALSE` (default), returns a `ggraph` object.
 #' @return A `ggraph` or `visNetwork` object representing the data-to-theme dependencies.
 #' @export
-#' @importFrom dplyr select mutate rename filter left_join bind_rows distinct
+#' @importFrom dplyr select mutate rename filter left_join bind_rows distinct count
 #' @importFrom tidyr separate_rows
 #' @importFrom igraph graph_from_data_frame
 #' @importFrom ggraph ggraph geom_edge_link geom_node_point geom_node_text theme_graph scale_edge_width
@@ -36,12 +36,17 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
     rlang::abort("No valid themes found to build the network edges.")
   }
 
+  # Calculate degree (how many themes each data_id is linked to)
+  node_degrees <- edges |>
+    dplyr::count(from, name = "degree")
+
   # Build node definitions
   theme_nodes <- data.frame(
     id = unique(edges$to),
     label = unique(edges$to),
     type = "Theme",
     status = NA_character_,
+    degree = max(node_degrees$degree, na.rm = TRUE) + 2,
     stringsAsFactors = FALSE
   )
 
@@ -49,6 +54,7 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
     dplyr::select(id = data_id, status) |>
     # Only keep data nodes that actually appear in edges
     dplyr::filter(id %in% edges$from) |>
+    dplyr::left_join(node_degrees, by = c("id" = "from")) |>
     dplyr::mutate(
       label = id,
       type = "Data",
@@ -60,11 +66,11 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
 
   # Colors for Data Nodes based on status
   status_colors <- c(
-    "Not Delivered" = "#D3D3D3",
-    "Rough Estimate" = "#FF9999",
-    "Delivered Unvalidated" = "#FFD700",
-    "Validated" = "#90EE90",
-    "Theme" = "#4A90E2"  # Color for theme nodes
+    "Not Delivered" = "#D9D9D9",
+    "Rough Estimate" = "#969696",
+    "Delivered Unvalidated" = "#525252",
+    "Validated" = "#000000",
+    "Theme" = "#000000"  # Black for theme nodes
   )
 
   if (interactive) {
@@ -72,10 +78,10 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
     v_nodes <- nodes |>
       dplyr::mutate(
         shape = ifelse(type == "Theme", "diamond", "dot"),
-        size = ifelse(type == "Theme", 40, 20),
+        value = degree,
         color = ifelse(type == "Theme", status_colors["Theme"], status_colors[status]),
         font.size = ifelse(type == "Theme", 20, 14),
-        title = ifelse(type == "Theme", paste("Theme:", label), paste("Data:", label, "<br>Status:", status))
+        title = ifelse(type == "Theme", paste("Theme:", label), paste("Data:", label, "<br>Status:", status, "<br>Connectivity:", degree))
       )
 
     # Prepare visNetwork edges
@@ -83,8 +89,8 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
       dplyr::mutate(arrows = "to")
 
     p <- visNetwork::visNetwork(v_nodes, v_edges, width = "100%", height = "600px") |>
-      visNetwork::visNodes(shadow = TRUE) |>
-      visNetwork::visEdges(color = list(color = "#A9A9A9", highlight = "#000000")) |>
+      visNetwork::visNodes(shadow = TRUE, scaling = list(min = 10, max = 30)) |>
+      visNetwork::visEdges(color = list(color = "#BDBDBD", highlight = "#000000")) |>
       visNetwork::visOptions(highlightNearest = TRUE, nodesIdSelection = TRUE) |>
       visNetwork::visInteraction(navigationButtons = TRUE)
     
@@ -96,14 +102,14 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
     
     p <- ggraph::ggraph(ig, layout = "fr") +
       ggraph::geom_edge_link(
-        color = "grey80",
+        color = "#BDBDBD",
         arrow = grid::arrow(length = grid::unit(3, 'mm'), type = "closed"),
         end_cap = ggraph::circle(4, 'mm')
       ) +
       ggraph::geom_node_point(
         ggplot2::aes(
           color = ifelse(type == "Theme", "Theme", status),
-          size = type,
+          size = degree,
           shape = type
         )
       ) +
@@ -112,7 +118,7 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
           label = label,
           filter = type == "Theme"
         ),
-        repel = TRUE,
+        vjust = 2.5,
         fontface = "bold",
         size = 5
       ) +
@@ -121,8 +127,8 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
         values = status_colors,
         breaks = names(status_colors)
       ) +
-      ggplot2::scale_size_manual(
-        values = c("Theme" = 10, "Data" = 4),
+      ggplot2::scale_size_continuous(
+        range = c(4, 10),
         guide = "none"
       ) +
       ggplot2::scale_shape_manual(
@@ -139,7 +145,7 @@ plot_theme_network <- function(tracker_obj, interactive = FALSE) {
         panel.background = ggplot2::element_rect(fill = "white", color = NA)
       ) +
       ggplot2::labs(
-        title = "Sustainability Data Interdependency Map",
+        title = "BOTTLENECK MAP",
         subtitle = "Data to Theme traceability"
       )
     

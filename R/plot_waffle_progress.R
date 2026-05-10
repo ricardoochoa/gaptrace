@@ -6,7 +6,7 @@
 #' @param tracker_obj An object of class `sustain_tracker`.
 #' @return A `ggplot2` object containing the waffle chart.
 #' @export
-#' @importFrom dplyr count mutate
+#' @importFrom dplyr count mutate arrange
 #' @importFrom waffle geom_waffle
 #' @importFrom ggplot2 ggplot aes scale_fill_manual labs coord_equal
 #' @importFrom rlang abort
@@ -28,21 +28,28 @@ plot_waffle_progress <- function(tracker_obj) {
     tidyr::complete(status = factor(c("Not Delivered", "Rough Estimate", "Delivered Unvalidated", "Validated"), 
                                      levels = c("Not Delivered", "Rough Estimate", "Delivered Unvalidated", "Validated"),
                                      ordered = TRUE), 
-                    fill = list(n = 0))
+                    fill = list(n = 0)) |>
+    dplyr::arrange(status)
+
+  # Calculate combined percentage
+  total_n <- sum(status_counts$n)
+  pct_val <- 0
+  if (total_n > 0) {
+    pct_val <- sum(status_counts$n[status_counts$status %in% c("Delivered Unvalidated", "Validated")]) / total_n * 100
+  }
+  subtitle_text <- sprintf("%.1f%% of data points have been delivered or validated", pct_val)
 
   # Define colors for each status
   status_colors <- c(
-    "Not Delivered" = "#D3D3D3",        # Grey
-    "Rough Estimate" = "#FF9999",       # Light Red
-    "Delivered Unvalidated" = "#FFD700",# Gold/Yellow
-    "Validated" = "#90EE90"             # Light Green
+    "Not Delivered" = "#D9D9D9",        # Light Gray
+    "Rough Estimate" = "#969696",       # Medium Gray
+    "Delivered Unvalidated" = "#525252",# Dark Gray
+    "Validated" = "#000000"             # Solid Black
   )
 
   # Create waffle chart
-  # Since waffle::geom_waffle uses the values directly or uncounted data,
-  # it's usually best to use the counts directly mapped to fill.
   p <- ggplot2::ggplot(status_counts, ggplot2::aes(fill = status, values = n)) +
-    waffle::geom_waffle(color = "white", size = 0.5, n_rows = 5, flip = TRUE) +
+    waffle::geom_waffle(color = "white", size = 0.5, n_rows = 10, make_proportional = TRUE, flip = TRUE) +
     ggplot2::scale_fill_manual(
       name = "Status",
       values = status_colors,
@@ -51,8 +58,8 @@ plot_waffle_progress <- function(tracker_obj) {
     ggplot2::coord_equal() +
     ggplot2::theme_minimal() +
     ggplot2::labs(
-      title = "Sustainability Data Collection Progress",
-      subtitle = "Proportion of data points by maturity level"
+      title = "DATA COLLECTION MATURITY",
+      subtitle = subtitle_text
     ) +
     ggplot2::theme(
       plot.title = ggplot2::element_text(face = "bold", size = 16),
