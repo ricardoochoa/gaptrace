@@ -1,8 +1,8 @@
 Package: gaptrace
-Title: Transform Sustainability Data into Executive Narratives
+Title: Transform Boring Data Collection into Executive Narratives
 Version: 0.1.0
-Authors@R: person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: An R package that transforms tabular sustainability data collection trackers into executive-level visual narratives.
+Authors@R: person("Ricardo", "Ochoa", , "ricardo.ochoa@capsus.mx", role = c("aut", "cre"))
+Description: An R package that transforms tabular data collection trackers into executive-level visual narratives.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
