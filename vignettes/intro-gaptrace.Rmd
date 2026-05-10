@@ -1,0 +1,71 @@
+---
+title: "Introduction to gaptrace"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introduction to gaptrace}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Overview
+
+`gaptrace` transforms tabular sustainability data collection trackers into executive-level visual narratives. This vignette demonstrates the complete workflow from data ingestion to exporting operational target lists.
+
+## 1. Load Dummy Data
+
+The package includes a synthetic dataset named `sustain_dummy_data` representing ~50 rows of simulated environmental consulting data.
+
+```{r setup}
+library(gaptrace)
+
+# View the first few rows
+head(sustain_dummy_data)
+```
+
+## 2. Ingest Data
+
+First, we ingest the raw data using `sustain_ingest()`. This function validates the schema and formats columns.
+
+```{r ingest}
+tracker <- sustain_ingest(sustain_dummy_data)
+class(tracker)
+```
+
+## 3. Visualize Progress
+
+We can plot an executive waffle chart showing the proportion of data collected versus missing.
+
+```{r waffle, fig.width=8, fig.height=5}
+plot_waffle_progress(tracker)
+```
+
+## 4. Visualize Interdependencies
+
+We can also generate an interdependency network graph linking specific data points to overarching themes. This can highlight how missing data nodes act as bottlenecks for central themes.
+
+```{r network, fig.width=8, fig.height=6}
+# Generate a static network graph
+plot_theme_network(tracker, interactive = FALSE)
+```
+
+*(Note: Use `interactive = TRUE` to render an interactive `visNetwork` graph in your local R environment.)*
+
+## 5. Export Targeted Action List
+
+Finally, we export a prioritized, filtered `.xlsx` list to share with operational teams.
+
+```{r export, eval=FALSE}
+# Create an Excel file containing only 'Not Delivered' items
+export_targeted_list(
+  tracker, 
+  filter_status = c("Not Delivered"), 
+  file_path = "urgent_action_list.xlsx"
+)
+```
