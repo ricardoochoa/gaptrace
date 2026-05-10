@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 ## Overview
 
-`gaptrace` transforms tabular sustainability data collection trackers into executive-level visual narratives. This vignette demonstrates the complete workflow from data ingestion to exporting operational target lists.
+`gaptrace` acts as a **High-Contrast Executive Summary** tool, transforming tabular sustainability data collection trackers into decisive visual narratives. By strictly utilizing a "Maturity Grayscale" (Light Gray to Solid Black), it strips away the cognitive distraction of color, enabling leaders to immediately assess attainment density, flag critical stagnation, and identify true bottlenecks.
 
 ## 1. Load Dummy Data
 
@@ -31,24 +31,24 @@ head(sustain_dummy_data)
 
 ## 2. Ingest Data
 
-First, we ingest the raw data using `sustain_ingest()`. This function validates the schema and formats columns.
+We ingest the raw data using `sustain_ingest()`. This function automatically maps critical metadata like `date_captured` (`fecha_captura`) and `priority` (`prioridad`). When the `lang = "es"` argument is applied, it handles row-level translation for priority tiers (e.g., converting "Alta" into "High"), ensuring the English visual schema stays robust.
 
 ```{r ingest}
-tracker <- sustain_ingest(sustain_dummy_data)
+tracker <- sustain_ingest(sustain_dummy_data, lang = "es")
 class(tracker)
 ```
 
-## 3. Visualize Progress
+## 3. Visualizing Maturity Foundation
 
-We can plot an executive waffle chart showing the proportion of data collected versus missing.
+To evaluate the attainment of the overall project, the package provides a **Stacked Loading Bar** approach. The solid monochromatic blocks intentionally distinguish the pending gray "foundation" from the black attained/validated data points, granting an immediate sense of baseline maturity.
 
 ```{r waffle, fig.width=8, fig.height=5}
 plot_waffle_progress(tracker)
 ```
 
-## 4. Visualize Interdependencies
+## 4. Identifying Bottlenecks & Critical Anchors
 
-We can also generate an interdependency network graph linking specific data points to overarching themes. This can highlight how missing data nodes act as bottlenecks for central themes.
+The interdependency network graph links specific data points to overarching themes. We utilize **Node Scaling**, where larger nodes represent "Critical Bottlenecks" (data points required by multiple themes), while **Black Diamonds** act as the primary thematic anchors.
 
 ```{r network, fig.width=8, fig.height=6}
 # Generate a static network graph
@@ -57,9 +57,46 @@ plot_theme_network(tracker, interactive = FALSE)
 
 *(Note: Use `interactive = TRUE` to render an interactive `visNetwork` graph in your local R environment.)*
 
-## 5. Export Targeted Action List
+## 5. Owner Performance Leaderboard
 
-Finally, we export a prioritized, filtered `.xlsx` list to share with operational teams.
+To drive accountability, we track owner efficiency through a 100% scaled leaderboard. It is ordered strictly by the percentage of data they have validated, revealing immediately which teams are leading in closure efficiency.
+
+```{r accountability, fig.width=8, fig.height=5}
+plot_accountability(tracker)
+```
+
+## 6. Thematic Health Heatmap
+
+By assigning an arbitrary row and column index to each item, we generate uniform "Maturity Blocks" per theme. This granular layout acts as a rapid health check across specific project areas, showing the exact density of completion.
+
+```{r heatmap, fig.width=8, fig.height=6}
+plot_theme_heatmap(tracker)
+```
+
+## 7. Tracking Collection Velocity
+
+The **Gap Trace** represents the **quantitative distance between the actual "Validated" progress line and the defined "Target Goal" line**. 
+
+Rather than a static snapshot of *what we have*, this visualization creates a dynamic narrative asking: *are we moving fast enough?* 
+* The slope of the cumulative completion line is your **Maturity Velocity**, indicating the rate at which the project foundation is being built.
+* The vertical distance remaining to reach the 100% target at any given timestamp is the **Residual Collection Gap**. 
+* If your actual progress line remains flat while the time-axis advances, creating a widening distance from the target, you are encountering a **Stagnation Risk**.
+
+```{r trend, fig.width=8, fig.height=5}
+plot_collection_trend(tracker)
+```
+
+## 8. Executive Triage: Priority Quadrant
+
+Before handing off tasks to operational teams, it is crucial to map out red flags. The Priority Quadrant highlights exactly where attention is needed. Data points mapped as "High" priority and "Not Delivered" are given a stark solid Black highlight, immediately drawing executive attention.
+
+```{r quadrant, fig.width=8, fig.height=5}
+plot_quadrant(tracker)
+```
+
+## 9. Operational Hand-off: Exporting Targeted Lists
+
+Finally, directly informed by the "Stagnation Risks" and "Red Flags" identified above, managers can generate an actionable sheet for operational teams. By filtering strictly for pending gaps (`filter_status = c("Not Delivered")`), you hand off a precise target list.
 
 ```{r export, eval=FALSE}
 # Create an Excel file containing only 'Not Delivered' items

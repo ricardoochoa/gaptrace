@@ -29,12 +29,25 @@ sustain_ingest <- function(data, lang = "es") {
       reference = "referencia",
       units = "unidades",
       tags = "etiquetas",
-      priority = "prioridad"
+      priority = "prioridad",
+      date_captured = "fecha_captura"
     )
     
     es_to_en_valid <- es_to_en[es_to_en %in% names(df)]
     if (length(es_to_en_valid) > 0) {
       df <- dplyr::rename(df, dplyr::all_of(es_to_en_valid))
+    }
+    
+    if ("priority" %in% names(df)) {
+      df <- df |>
+        dplyr::mutate(
+          priority = dplyr::case_when(
+            priority == "Alta" ~ "High",
+            priority == "Media" ~ "Medium",
+            priority == "Baja" ~ "Low",
+            TRUE ~ as.character(priority)
+          )
+        )
     }
   }
 
@@ -65,6 +78,24 @@ sustain_ingest <- function(data, lang = "es") {
         ordered = TRUE
       )
     )
+
+  if ("priority" %in% names(df)) {
+    priority_levels <- c("Low", "Medium", "High")
+    df <- df |>
+      dplyr::mutate(
+        priority = factor(
+          priority,
+          levels = priority_levels,
+          ordered = TRUE
+        )
+      )
+  }
+  
+  if ("date_captured" %in% names(df)) {
+    if (is.character(df$date_captured) || inherits(df$date_captured, "POSIXt")) {
+      df$date_captured <- as.Date(df$date_captured)
+    }
+  }
 
   # Validate that status didn't become all NAs due to bad inputs
   if (any(is.na(df$status))) {
